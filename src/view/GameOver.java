@@ -1,14 +1,12 @@
 package view;
 
-import java.awt.Button;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 
 import engine.Game;
 
+@SuppressWarnings({"serial", "this-escape"})
 public class GameOver extends JFrame{
     JFrame GameOver;
     JLabel result;
@@ -19,8 +17,8 @@ public class GameOver extends JFrame{
         GameOver.setLocationRelativeTo(null);
         GameOver.setSize(500, 250);
         if(t.getAvailableCities().size()==t.getPlayer().getControlledCities().size()){
-        	result = new JLabel("You Won The Game Congrats You did it!");
-        	result.setBounds(200, 25, 150, 25);
+           result = new JLabel("You Won The Game Congrats You did it!");
+           result.setBounds(200, 25, 150, 25);
         }else if(t.getCurrentTurnCount() > t.getMaxTurnCount()){
             result = new JLabel("Sorry You lost! better luck next time");
             result.setBounds(200, 25, 150, 25);

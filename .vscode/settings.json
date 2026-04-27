@@ -1,0 +1,31 @@
+{
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.project.sourcePaths": [
+        "src"
+    ],
+    "java.project.outputPath": "bin",
+    "java.project.excludedPaths": [
+        ".codex-check/**",
+        ".metadata/**",
+        ".settingsdada/**",
+        "bin/**"
+    ],
+    "files.exclude": {
+        "**/.codex-check": true,
+        "**/.metadata": true,
+        "**/.settingsdada": true,
+        "**/bin": true
+    },
+    "files.watcherExclude": {
+        "**/.codex-check/**": true,
+        "**/.metadata/**": true,
+        "**/.settingsdada/**": true,
+        "**/bin/**": true
+    },
+    "search.exclude": {
+        "**/.codex-check": true,
+        "**/.metadata": true,
+        "**/.settingsdada": true,
+        "**/bin": true
+    }
+}
