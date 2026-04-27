@@ -1,5 +1,6 @@
 package engine;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
 import buildings.ArcheryRange;
@@ -20,7 +21,9 @@ import units.Army;
 import units.Status;
 import units.Unit;
 
-public class Player {
+public class Player implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private String name;
     private ArrayList<City> controlledCities;
     private ArrayList<Army> controlledArmies;

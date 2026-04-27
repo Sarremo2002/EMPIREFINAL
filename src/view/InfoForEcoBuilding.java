@@ -98,6 +98,7 @@ public class InfoForEcoBuilding extends JFrame implements ActionListener {
         } else if (e.getSource() == upgradeBtn) {
             try {
                 game.getPlayer().upgradeBuilding(ecoBuilding);
+                UITheme.showInfo(this, buildingName() + " upgraded to level " + ecoBuilding.getLevel() + ".");
                 returnToCity();
             } catch (BuildingInCoolDownException exception) {
                 UITheme.showError(this, "Building is still in cooldown.");

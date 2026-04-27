@@ -1,8 +1,16 @@
 package engine;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.FileOutputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 
 import buildings.EconomicBuilding;
@@ -17,17 +25,22 @@ import units.Infantry;
 import units.Status;
 import units.Unit;
 
-public class Game {
+public class Game implements Serializable {
+    private static final long serialVersionUID = 1L;
+    public static final String DEFAULT_SAVE_PATH = "saves/empire-save.dat";
+
     private Player player;
     private ArrayList<City> availableCities;
     private ArrayList<Distance> distances;
     private final int maxTurnCount = 50;
     private int currentTurnCount;
+    private TurnSummary lastTurnSummary;
 
     @SuppressWarnings("this-escape")
     public Game(String playerName, String playerCity) throws IOException {
         player = new Player(playerName);
         player.setTreasury(5000);
+        player.setFood(1200);
         availableCities = new ArrayList<City>();
         distances = new ArrayList<Distance>();
         currentTurnCount = 1;
@@ -51,7 +64,7 @@ public class Game {
     }
     private void loadCitiesAndDistances() throws IOException {
 
-        BufferedReader br = new BufferedReader(new FileReader("distances.csv"));
+        BufferedReader br = openDataReader("distances.csv");
         String currentLine = br.readLine();
         ArrayList<String> names = new ArrayList<String>();
 
@@ -75,7 +88,7 @@ public class Game {
 
     public void loadArmy(String cityName, String path) throws IOException {
 
-        BufferedReader br = new BufferedReader(new FileReader(path));
+        BufferedReader br = openDataReader(path);
         String currentLine = br.readLine();
         Army resultArmy = new Army(cityName);
         while (currentLine != null) {
@@ -147,6 +160,7 @@ public class Game {
     }
 
     public void endTurn() {
+        TurnSummary summary = new TurnSummary(currentTurnCount + 1, player.getFood());
         currentTurnCount++;
         double totalUpkeep = 0;
         for (City c : player.getControlledCities()) {
@@ -159,10 +173,16 @@ public class Game {
             for (EconomicBuilding b : c.getEconomicalBuildings()) {
 
                 b.setCoolDown(false);
-                if (b instanceof Market)
+                if (b instanceof Market) {
+                    summary.addGold(b.harvest());
+                    summary.addEvent(c.getName() + " market produced " + b.harvest() + " gold.");
                     player.setTreasury(player.getTreasury() + b.harvest());
-                else if (b instanceof Farm)
+                }
+                else if (b instanceof Farm) {
+                    summary.addFood(b.harvest());
+                    summary.addEvent(c.getName() + " farm produced " + b.harvest() + " food.");
                     player.setFood(player.getFood() + b.harvest());
+                }
             }
             totalUpkeep+=c.getDefendingArmy().foodNeeded();
         }
@@ -170,26 +190,35 @@ public class Game {
             if (!a.getTarget() .equals("") && a.getCurrentStatus() == Status.IDLE) {
                 a.setCurrentStatus(Status.MARCHING);
                 a.setCurrentLocation("onRoad");
+                summary.addEvent("Army marching toward " + a.getTarget() + ".");
             }
             if(a.getDistancetoTarget()>0 &&!a.getTarget().equals(""))
             a.setDistancetoTarget(a.getDistancetoTarget() - 1);
             if (a.getDistancetoTarget() == 0) {
                 a.setCurrentLocation(a.getTarget());
+                summary.addEvent("Army arrived at " + a.getTarget() + ".");
                 a.setTarget("");
                 a.setCurrentStatus(Status.IDLE);
             }
             totalUpkeep +=  a.foodNeeded();
 
         }
+        summary.setUpkeepPaid(totalUpkeep);
         if (totalUpkeep <= player.getFood())
             player.setFood(player.getFood() - totalUpkeep);
         else {
+            summary.setStarvation(true);
+            summary.addEvent("Food was not enough for upkeep. Attrition hit your armies.");
             player.setFood(0);
             for (City c : player.getControlledCities()) {
-                applyAttrition(c.getDefendingArmy());
+                int losses = applyAttrition(c.getDefendingArmy());
+                if (losses > 0)
+                    summary.addEvent(c.getName() + " defenders lost " + losses + " soldiers to starvation.");
             }
             for (Army a : player.getControlledArmies()) {
-                applyAttrition(a);
+                int losses = applyAttrition(a);
+                if (losses > 0)
+                    summary.addEvent("Field army at " + a.getCurrentLocation() + " lost " + losses + " soldiers to starvation.");
             }
         }
 
@@ -197,26 +226,73 @@ public class Game {
             if (c.isUnderSiege()) {
                 if(c.getTurnsUnderSiege() < 3){
                 c.setTurnsUnderSiege(c.getTurnsUnderSiege() + 1);
+                summary.addEvent(c.getName() + " siege advanced to turn " + c.getTurnsUnderSiege() + ".");
 
                 }
                 else{
                     // player should choose to attack
                     c.setUnderSiege(false);
+                    summary.addEvent(c.getName() + " siege limit reached. Attack must be resolved.");
+                    summary.setFoodAfter(player.getFood());
+                    lastTurnSummary = summary;
                     return;
                 }
-                applyAttrition(c.getDefendingArmy());
+                int losses = applyAttrition(c.getDefendingArmy());
+                if (losses > 0)
+                    summary.addEvent(c.getName() + " defenders lost " + losses + " soldiers under siege.");
             }
         }
+        summary.setFoodAfter(player.getFood());
+        lastTurnSummary = summary;
 
     }
 
-    private void applyAttrition(Army army) {
+    private int applyAttrition(Army army) {
+        int totalLosses = 0;
         for (int i = army.getUnits().size() - 1; i >= 0; i--) {
             Unit u = army.getUnits().get(i);
+            int before = u.getCurrentSoldierCount();
             int loss = Math.max(1, (int) (u.getCurrentSoldierCount() * 0.1));
             u.setCurrentSoldierCount(u.getCurrentSoldierCount() - loss);
+            totalLosses += before - u.getCurrentSoldierCount();
             army.handleAttackedUnit(u);
         }
+        return totalLosses;
+    }
+
+    private BufferedReader openDataReader(String path) throws IOException {
+        InputStream input = Game.class.getClassLoader().getResourceAsStream(path);
+        if (input == null)
+            input = Game.class.getClassLoader().getResourceAsStream("resources/" + path);
+        if (input != null)
+            return new BufferedReader(new InputStreamReader(input));
+
+        File resourceFile = new File("resources", path);
+        if (resourceFile.isFile())
+            return new BufferedReader(new InputStreamReader(new FileInputStream(resourceFile)));
+
+        return new BufferedReader(new FileReader(path));
+    }
+
+    public void save(String path) throws IOException {
+        File file = new File(path);
+        File parent = file.getParentFile();
+        if (parent != null)
+            parent.mkdirs();
+        ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(file));
+        out.writeObject(this);
+        out.close();
+    }
+
+    public static Game load(String path) throws IOException, ClassNotFoundException {
+        ObjectInputStream in = new ObjectInputStream(new FileInputStream(path));
+        Game game = (Game) in.readObject();
+        in.close();
+        return game;
+    }
+
+    public static boolean hasDefaultSave() {
+        return new File(DEFAULT_SAVE_PATH).isFile();
     }
 
     public void autoResolve(Army attacker, Army defender) throws FriendlyFireException {
@@ -283,6 +359,10 @@ public class Game {
 
     public void setCurrentTurnCount(int currentTurnCount) {
         this.currentTurnCount = currentTurnCount;
+    }
+
+    public TurnSummary getLastTurnSummary() {
+        return lastTurnSummary;
     }
 
 }

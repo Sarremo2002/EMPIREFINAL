@@ -1,6 +1,10 @@
 package engine;
 
-public class Distance {
+import java.io.Serializable;
+
+public class Distance implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private String from;
     private String to;
     private int distance;

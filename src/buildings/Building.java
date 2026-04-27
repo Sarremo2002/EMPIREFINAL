@@ -1,9 +1,12 @@
 package buildings;
 
+import java.io.Serializable;
+
 import exceptions.BuildingInCoolDownException;
 import exceptions.MaxLevelException;
 
-public abstract class Building {
+public abstract class Building implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     private int cost;
     private int level;

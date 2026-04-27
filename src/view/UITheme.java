@@ -1,5 +1,6 @@
 package view;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
@@ -14,9 +15,17 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.plaf.basic.BasicButtonUI;
+
+import engine.TurnSummary;
+import units.Archer;
+import units.Army;
+import units.Cavalry;
+import units.Infantry;
+import units.Unit;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.border.TitledBorder;
@@ -87,6 +96,17 @@ public final class UITheme {
         return panel;
     }
 
+    public static JPanel roadTile(String text) {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(ROAD);
+        panel.setBorder(new LineBorder(ACCENT_DARK, 1));
+        JLabel label = label(text);
+        centerLabel(label);
+        panel.add(label, BorderLayout.CENTER);
+        panel.setPreferredSize(new Dimension(74, 58));
+        return panel;
+    }
+
     public static JLabel title(String text) {
         JLabel label = new JLabel(text);
         label.setFont(TITLE_FONT);
@@ -140,9 +160,12 @@ public final class UITheme {
     }
 
     public static JButton cityButton(String text, boolean controlled) {
-        JButton button = new JButton("<html><center>" + text + "<br>"
-                + (controlled ? "Controlled" : "Uncaptured") + "</center></html>");
-        styleButton(button, controlled ? SUCCESS : DANGER, Color.WHITE);
+        return cityButton(text, controlled ? "Controlled" : "Uncaptured", controlled, false);
+    }
+
+    public static JButton cityButton(String text, String status, boolean controlled, boolean underSiege) {
+        JButton button = new JButton("<html><center>" + text + "<br>" + status + "</center></html>");
+        styleButton(button, underSiege ? ACCENT : controlled ? SUCCESS : DANGER, Color.WHITE);
         button.setPreferredSize(new Dimension(116, 68));
         return button;
     }
@@ -186,11 +209,42 @@ public final class UITheme {
         return String.format("%.0f", Double.valueOf(value));
     }
 
+    public static String unitType(Unit unit) {
+        if (unit instanceof Archer) {
+            return "Archer";
+        }
+        if (unit instanceof Infantry) {
+            return "Infantry";
+        }
+        if (unit instanceof Cavalry) {
+            return "Cavalry";
+        }
+        return "Unit";
+    }
+
+    public static String armyName(Army army, int index) {
+        String target = army.getTarget() == null || army.getTarget().equals("") ? "-" : army.getTarget();
+        return "Army " + (index + 1) + " | " + army.getCurrentLocation() + " | " + army.getUnits().size()
+                + " units | target " + target;
+    }
+
     public static void showError(Component parent, String message) {
         JOptionPane.showMessageDialog(parent, message, "Empire", JOptionPane.ERROR_MESSAGE);
     }
 
     public static void showInfo(Component parent, String message) {
         JOptionPane.showMessageDialog(parent, message, "Empire", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    public static void showTurnSummary(Component parent, TurnSummary summary) {
+        if (summary == null) {
+            return;
+        }
+        JTextArea area = new JTextArea(summary.toDisplayText(), 14, 46);
+        area.setEditable(false);
+        area.setLineWrap(true);
+        area.setWrapStyleWord(true);
+        area.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        JOptionPane.showMessageDialog(parent, scroll(area), "Empire", JOptionPane.INFORMATION_MESSAGE);
     }
 }

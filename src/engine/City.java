@@ -1,11 +1,14 @@
 package engine;
+import java.io.Serializable;
 import java.util.ArrayList;
 
 import buildings.EconomicBuilding;
 import buildings.MilitaryBuilding;
 import units.Army;
 
-public class City {
+public class City implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private String name;
 private ArrayList<EconomicBuilding> economicalBuildings;
 private ArrayList<MilitaryBuilding> militaryBuildings;

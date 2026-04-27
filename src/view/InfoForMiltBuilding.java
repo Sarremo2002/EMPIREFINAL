@@ -118,6 +118,7 @@ public class InfoForMiltBuilding extends JFrame implements ActionListener {
         } else if (e.getSource() == upgradeBtn) {
             try {
                 game.getPlayer().upgradeBuilding(miltBuilding);
+                UITheme.showInfo(this, buildingName() + " upgraded to level " + miltBuilding.getLevel() + ".");
                 returnToCity();
             } catch (BuildingInCoolDownException exception) {
                 UITheme.showError(this, "Building is still in cooldown.");
@@ -129,6 +130,7 @@ public class InfoForMiltBuilding extends JFrame implements ActionListener {
         } else if (e.getSource() == recruitBtn) {
             try {
                 game.getPlayer().recruitUnit(unitType(), city.getName());
+                UITheme.showInfo(this, unitName() + " recruited in " + city.getName() + ".");
                 returnToCity();
             } catch (NotEnoughGoldException exception) {
                 UITheme.showError(this, "Not enough gold to perform this action.");

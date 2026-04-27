@@ -1,70 +1,90 @@
 package view;
 
-import java.awt.Button;
-import java.awt.GridLayout;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
 import javax.swing.JFrame;
-import javax.swing.JOptionPane;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import exceptions.MaxCapacityException;
 import units.Army;
 import units.Unit;
 
-@SuppressWarnings("this-escape")
+@SuppressWarnings({ "serial", "this-escape" })
 public class ChooseArmy extends JFrame implements ActionListener {
-    private static final long serialVersionUID = 1L;
-    ArrayList<Button> r;
-    ArrayList<Army> army;
-    Unit need;
-    JFrame frame;
-    @SuppressWarnings("this-escape")
-    public ChooseArmy(ArrayList<Army> e, Unit needed){
-        r=new ArrayList<Button>();
-        army = e;
-        need =needed;
-        JPanel s = new JPanel();
-        s.setLayout(new GridLayout());
-        if(e != null){
-           if(e.size() >= 0){
-               for(int i = 0;i<e.size();i++){
-                    Button What= new Button();
-                    What.setLabel("Army " + i);
-                    What.addActionListener(this);
-                    r.add(What);
-               }
-           }
-           this.add(s);
-        }
-        if(e != null){
-            for(int i =0;i<e.size();i++){
-                s.add(r.get(i));
-            }
-        }
-        this.setSize(500,500);
-        this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        this.setLocationRelativeTo(null);
+    private ArrayList<JButton> buttons = new ArrayList<JButton>();
+    private ArrayList<Army> armies;
+    private Unit unit;
 
-        this.setVisible(true);
-    }
-    public void actionPerformed(ActionEvent e){
-        if(need!=null&& army!=null){
-            try {
-                for(int i=0 ; i<army.size();i++){
-                    if(e.getSource()==r.get(i)){
-                army.get(i).relocateUnit(need);
-                    }}
-            } catch (MaxCapacityException e1) {
-                JOptionPane.showMessageDialog(frame, "Army already has the maximum amount of units" , "", JOptionPane.ERROR_MESSAGE);
-            }
-            this.dispose();
-        }
+    public ChooseArmy(ArrayList<Army> armies, Unit unit) {
+        this.armies = armies;
+        this.unit = unit;
 
+        setTitle("Choose Army");
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setContentPane(createContent());
+        setPreferredSize(new Dimension(560, 420));
+        pack();
+        setLocationRelativeTo(null);
+        setVisible(true);
     }
 
+    private JPanel createContent() {
+        JPanel page = UITheme.pagePanel();
+        page.setLayout(new BorderLayout(0, 14));
+        page.add(UITheme.title("Choose Army"), BorderLayout.NORTH);
 
+        JPanel list = UITheme.titledCard("Available Field Armies");
+        list.setLayout(new BoxLayout(list, BoxLayout.Y_AXIS));
 
+        if (armies == null || armies.isEmpty()) {
+            JLabel empty = UITheme.label("No field armies are available.");
+            list.add(empty);
+        } else {
+            for (int i = 0; i < armies.size(); i++) {
+                Army army = armies.get(i);
+                JButton button = UITheme.button(UITheme.armyName(army, i));
+                button.setAlignmentX(LEFT_ALIGNMENT);
+                button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 52));
+                if (army.getUnits().size() >= army.getMaxToHold()) {
+                    UITheme.disable(button, "Army " + (i + 1) + " is full");
+                } else {
+                    button.addActionListener(this);
+                }
+                buttons.add(button);
+                list.add(button);
+                list.add(Box.createVerticalStrut(8));
+            }
+        }
+
+        page.add(UITheme.scroll(list), BorderLayout.CENTER);
+        return page;
+    }
+
+    public void actionPerformed(ActionEvent e) {
+        if (unit == null || armies == null) {
+            dispose();
+            return;
+        }
+
+        for (int i = 0; i < buttons.size(); i++) {
+            if (e.getSource() == buttons.get(i)) {
+                try {
+                    armies.get(i).relocateUnit(unit);
+                    UITheme.showInfo(this, "Unit added to Army " + (i + 1) + ".");
+                    dispose();
+                } catch (MaxCapacityException exception) {
+                    UITheme.showError(this, "Army already has the maximum amount of units.");
+                }
+                return;
+            }
+        }
+    }
 }

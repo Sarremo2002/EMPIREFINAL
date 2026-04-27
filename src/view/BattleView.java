@@ -1,172 +1,158 @@
 package view;
 
 import java.awt.BorderLayout;
-import java.awt.Button;
 import java.awt.Dimension;
-import java.awt.GridLayout;
-import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 
-import javax.swing.JFrame;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.table.DefaultTableModel;
 
-import units.Army;
 import engine.Game;
+import units.Army;
+import units.Unit;
 
 @SuppressWarnings("this-escape")
-public class BattleView extends MainView implements ActionListener{
+public class BattleView extends MainView implements ActionListener {
     private static final long serialVersionUID = 1L;
-    ArrayList<Button> k , g;
-    Button endTurn;
-    Button yes;
-    JFrame c;
-    JPanel defendingArmy;
-    private Army newArmy;
-    private Army x;
-    private ArrayList<String>log;
+    private ArrayList<JButton> attackerButtons;
+    private JButton endTurn;
+    private Army defendingArmy;
+    private Army attackingArmy;
+    private ArrayList<String> log;
     private int turns;
-    private int selectedAttackerIndex = -1;
-    String cityName;
-    @SuppressWarnings("this-escape")
-    public BattleView(Game game , Army x , int turns , String cityName , ArrayList <String> log){
+    private String cityName;
+
+    public BattleView(Game game, Army attackingArmy, int turns, String cityName, ArrayList<String> log) {
         super(game);
         this.turns = turns;
-        this.x = x;
+        this.attackingArmy = attackingArmy;
         this.cityName = cityName;
         this.log = log;
-        this.setLayout(new BorderLayout());
-        this.setTitle("Battle View");
-        this.add(createStats() , BorderLayout.NORTH);
-        this.add(defendingArmy(cityName) , BorderLayout.EAST);
-        this.add(attackingArmy(x),BorderLayout.WEST);
-        this.add(buttonSection() , BorderLayout.SOUTH);
-        this.add(log(log),BorderLayout.CENTER);
-    }
-    public JPanel log(ArrayList<String> e){
-        JPanel log = new JPanel();
-        log.setPreferredSize(new Dimension(1200, (int) Toolkit.getDefaultToolkit().getScreenSize().getHeight()));
-        String [] T = {"Log"};
-        JTable s = new JTable();
-        Object [][] v= new Object[e.size()][1];
-               for(int i = 0;i<e.size();i++){
-                   v[i][0] = e.get(i);
-               }
-               s = new JTable(v,T);
+        this.defendingArmy = findDefendingArmy(cityName);
 
-        JScrollPane scrollPane = new JScrollPane(s);
-        s.setFillsViewportHeight(true);
-       log.add(scrollPane);
-       return log;
+        setTitle("Battle at " + cityName);
+        setContentPane(createContent());
+        revalidate();
+        repaint();
     }
 
-    public JPanel buttonSection(){
-        JPanel buttonSection = new JPanel();
-        buttonSection.setLayout(new GridLayout(1 , 1));
-        endTurn = new Button("End Turn");
+    private JPanel createContent() {
+        JPanel page = UITheme.pagePanel();
+        page.setLayout(new BorderLayout(16, 16));
+        page.add(createStats(), BorderLayout.NORTH);
+        page.add(logPanel(log), BorderLayout.CENTER);
+        page.add(armyPanel("Attackers", attackingArmy, true), BorderLayout.WEST);
+        page.add(armyPanel("Defenders", defendingArmy, false), BorderLayout.EAST);
+        page.add(buttonSection(), BorderLayout.SOUTH);
+        return page;
+    }
+
+    private JPanel logPanel(ArrayList<String> entries) {
+        JPanel panel = UITheme.titledCard("Battle Log");
+        panel.setLayout(new BorderLayout());
+        DefaultTableModel model = new DefaultTableModel(new String[] { "Turn " + turns }, 0) {
+            private static final long serialVersionUID = 1L;
+
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        for (int i = 0; i < entries.size(); i++) {
+            model.addRow(new Object[] { entries.get(i) });
+        }
+        if (entries.isEmpty()) {
+            model.addRow(new Object[] { "Select one of your units to choose a target." });
+        }
+        JTable table = new JTable(model);
+        table.setFillsViewportHeight(true);
+        panel.add(UITheme.scroll(table), BorderLayout.CENTER);
+        return panel;
+    }
+
+    private JPanel buttonSection() {
+        JPanel panel = UITheme.card();
+        panel.setLayout(new BorderLayout());
+        endTurn = UITheme.dangerButton("End Battle Turn");
         endTurn.addActionListener(this);
-        buttonSection.add(endTurn , BorderLayout.SOUTH);
-        return buttonSection;
+        panel.add(endTurn, BorderLayout.EAST);
+        return panel;
     }
-    public JPanel attackingArmy(Army e) throws NullPointerException{
-        g = new ArrayList<Button>();
-        JPanel attackingArmy = new JPanel();
-        attackingArmy.setLayout(new GridLayout(5 , 2));
-        if(e.getUnits().size() >= 0){
-           for(int i = 0;i<e.getUnits().size();i++){
-                Button what2= new Button();
-                what2.setLabel("unit " + i);
-                what2.addActionListener(this);
-                g.add(what2);
-           }
-       }
-        for(int i =0;i<e.getUnits().size();i++){
-           attackingArmy.add(g.get(i));
+
+    private JPanel armyPanel(String title, Army army, boolean selectable) {
+        JPanel panel = UITheme.titledCard(title);
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setPreferredSize(new Dimension(320, 0));
+
+        if (selectable) {
+            attackerButtons = new ArrayList<JButton>();
         }
-        return attackingArmy;
-    }
 
-    public JPanel defendingArmy(String s) throws NullPointerException{
-        k = new ArrayList<Button>();
-        for(int i = 0 ; i < super.getGame().getAvailableCities().size() ; i++)
-            if (super.getGame().getAvailableCities().get(i).getName() .equals(s)){
-                newArmy = super.getGame().getAvailableCities().get(i).getDefendingArmy();
-            }
-        defendingArmy = new JPanel();
-        defendingArmy.setSize(600 , 600);
-        defendingArmy.setLayout(new GridLayout(5 , 2));
-        if(newArmy.getUnits().size() > 0){
-           for(int i = 0;i<newArmy.getUnits().size();i++){
-                Button what= new Button();
-                what.setLabel("Unit " + (i+1));
-                what.addActionListener(this);
-                k.add(what);
-           }
+        if (army == null || army.getUnits().isEmpty()) {
+            JLabel empty = UITheme.label("No units remain.");
+            panel.add(empty);
+            return panel;
         }
-            for(int i =0;i<newArmy.getUnits().size();i++){
-               defendingArmy.add(k.get(i));
+
+        for (int i = 0; i < army.getUnits().size(); i++) {
+            Unit unit = army.getUnits().get(i);
+            JButton button = selectable ? UITheme.primaryButton(unitLabel(unit, i)) : UITheme.button(unitLabel(unit, i));
+            button.setAlignmentX(LEFT_ALIGNMENT);
+            button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 58));
+            if (selectable) {
+                button.addActionListener(this);
+                attackerButtons.add(button);
+            } else {
+                button.setEnabled(false);
             }
-        return defendingArmy;
+            panel.add(button);
+            panel.add(Box.createVerticalStrut(8));
+        }
+        return panel;
     }
 
-    public void frame (Army e ,int x){
-        selectedAttackerIndex = x;
-        c = new JFrame();
-        c.setSize(500, 300);
-        c.setLayout(new GridLayout(3, 2));
-        c.setLocationRelativeTo(null);
-                JLabel level = new JLabel("Unit Level: " + e.getUnits().get(x).getLevel());
-                c.add(level);
-                JLabel soldierCount= new JLabel("Current Soldier Count: " + e.getUnits().get(x).getCurrentSoldierCount());
-                c.add(soldierCount);
-                JLabel upkeep = new JLabel("Unit Upkeep: " + e.getUnits().get(x).getSiegeUpkeep());
-                c.add(upkeep);
-                JLabel attack = new JLabel("Do you want to attack using this unit?");
-                c.add(attack);
-                yes = new Button("Yes");
-                yes.addActionListener(this);
-                c.add(yes);
-
-        c.setVisible(true);
+    private String unitLabel(Unit unit, int index) {
+        return "<html>Unit " + (index + 1) + "<br>" + UITheme.unitType(unit) + " level " + unit.getLevel()
+                + "<br>Soldiers " + unit.getCurrentSoldierCount() + "/" + unit.getMaxSoldierCount() + "</html>";
     }
-    @Override
+
+    private Army findDefendingArmy(String cityName) {
+        for (int i = 0; i < getGame().getAvailableCities().size(); i++) {
+            if (getGame().getAvailableCities().get(i).getName().equals(cityName)) {
+                return getGame().getAvailableCities().get(i).getDefendingArmy();
+            }
+        }
+        return null;
+    }
+
     public void actionPerformed(ActionEvent e) {
-        for(int i=0 ; i<x.getUnits().size();i++){
-            if(e.getSource()==g.get(i)){
-                frame(x , i);
+        for (int i = 0; i < attackerButtons.size(); i++) {
+            if (e.getSource() == attackerButtons.get(i)) {
+                new ChooseUnittoAttack(attackingArmy.getUnits().get(i), defendingArmy, turns, log);
+                return;
             }
         }
-        if (e.getSource() == endTurn){
-            super.getGame().endTurn();
-            this.dispose();
-//            if(getGame().isGameOver()){
-//                GameOver t = new GameOver(getGame());
-//            }
-            if (x.getUnits().size() != 0 && newArmy.getUnits().size() != 0){
-                for(int i = 0 ; i < this.getGame().getAvailableCities().size() ; i++)
-                    if (this.getGame().getAvailableCities().get(i).getName() .equals(cityName)){
-                        new BattleView(this.getGame() , x , turns + 1 , cityName , log);
-                    }
-            }
-            else if(x.getUnits().size() == 0){
+
+        if (e.getSource() == endTurn) {
+            getGame().endTurn();
+            dispose();
+            UITheme.showTurnSummary(this, getGame().getLastTurnSummary());
+            if (attackingArmy.getUnits().size() != 0 && defendingArmy.getUnits().size() != 0) {
+                new BattleView(getGame(), attackingArmy, turns + 1, cityName, log);
+            } else if (attackingArmy.getUnits().size() == 0) {
                 new BattleLost();
-                if(getGame().getPlayer().getControlledArmies().contains(x)){
-                    getGame().getPlayer().getControlledArmies().remove(x);
+                if (getGame().getPlayer().getControlledArmies().contains(attackingArmy)) {
+                    getGame().getPlayer().getControlledArmies().remove(attackingArmy);
                 }
-            }
-            else if(newArmy.getUnits().size() == 0){
-                this.getGame().occupy(x, cityName);
+            } else if (defendingArmy.getUnits().size() == 0) {
+                getGame().occupy(attackingArmy, cityName);
                 new BattleWon();
-            }
-        }
-        if (e.getSource() == yes){
-            c.dispose();
-            if (selectedAttackerIndex >= 0 && selectedAttackerIndex < x.getUnits().size()) {
-                new ChooseUnittoAttack(x.getUnits().get(selectedAttackerIndex), newArmy , turns , log);
             }
         }
     }

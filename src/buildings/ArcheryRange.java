@@ -7,6 +7,7 @@ import units.Archer;
 import units.Unit;
 
 public class ArcheryRange extends MilitaryBuilding {
+    private static final long serialVersionUID = 1L;
 
     public ArcheryRange() {
         super(1500, 800,400);

@@ -4,6 +4,7 @@ import exceptions.BuildingInCoolDownException;
 import exceptions.MaxLevelException;
 
 public class Market extends EconomicBuilding {
+    private static final long serialVersionUID = 1L;
 
     public Market() {
         super(1500, 700);

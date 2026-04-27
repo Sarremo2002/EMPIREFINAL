@@ -1,11 +1,14 @@
 package units;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
 import exceptions.MaxCapacityException;
 
 
-public class Army{
+public class Army implements Serializable{
+    private static final long serialVersionUID = 1L;
+
     private Status currentStatus;
     private ArrayList<Unit> units;
     private int distancetoTarget;

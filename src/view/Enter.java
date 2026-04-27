@@ -9,6 +9,7 @@ import java.awt.event.ActionListener;
 import java.io.IOException;
 
 import javax.swing.JComboBox;
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -21,6 +22,8 @@ import engine.Game;
 public class Enter extends JFrame implements ActionListener {
     private final JTextField playerName = new JTextField(18);
     private final JComboBox<String> playerCity = new JComboBox<String>(new String[] { "Cairo", "Rome", "Sparta" });
+    private JButton start;
+    private JButton load;
 
     public Enter() {
         UITheme.install();
@@ -59,8 +62,16 @@ public class Enter extends JFrame implements ActionListener {
 
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         actions.setOpaque(false);
-        javax.swing.JButton start = UITheme.primaryButton("Start Campaign");
+        load = UITheme.button("Load Saved Campaign");
+        start = UITheme.primaryButton("Start Campaign");
+        if (!Game.hasDefaultSave()) {
+            UITheme.disable(load, "No Saved Campaign");
+        } else {
+            load.addActionListener(this);
+        }
         start.addActionListener(this);
+        actions.add(load);
+        actions.add(javax.swing.Box.createHorizontalStrut(10));
         actions.add(start);
         page.add(actions, BorderLayout.SOUTH);
 
@@ -73,6 +84,11 @@ public class Enter extends JFrame implements ActionListener {
     }
 
     public void actionPerformed(ActionEvent e) {
+        if (e.getSource() == load) {
+            loadSavedCampaign();
+            return;
+        }
+
         String name = playerName.getText().trim();
         String city = ((String) playerCity.getSelectedItem()).toLowerCase();
 
@@ -86,6 +102,19 @@ public class Enter extends JFrame implements ActionListener {
             new WorldMap(new Game(name, city));
         } catch (IOException exception) {
             UITheme.showError(this, "Could not load game data: " + exception.getMessage());
+            new Enter();
+        }
+    }
+
+    private void loadSavedCampaign() {
+        try {
+            dispose();
+            new WorldMap(Game.load(Game.DEFAULT_SAVE_PATH));
+        } catch (IOException exception) {
+            UITheme.showError(this, "Could not load saved campaign: " + exception.getMessage());
+            new Enter();
+        } catch (ClassNotFoundException exception) {
+            UITheme.showError(this, "Saved campaign is not compatible with this version.");
             new Enter();
         }
     }

@@ -3,6 +3,7 @@ package units;
 import exceptions.FriendlyFireException;
 
 public class Infantry extends Unit {
+    private static final long serialVersionUID = 1L;
 
     public Infantry(int level, int maxSoldierConunt, double idleUpkeep, double marchingUpkeep, double siegeUpkeep) {
         super(level, maxSoldierConunt, idleUpkeep, marchingUpkeep, siegeUpkeep);

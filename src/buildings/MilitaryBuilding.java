@@ -4,6 +4,7 @@ import exceptions.MaxRecruitedException;
 import units.Unit;
 
 public abstract class MilitaryBuilding extends Building {
+    private static final long serialVersionUID = 1L;
     private int recruitmentCost;
     private  int maxRecruit;
     private int currentRecruit;

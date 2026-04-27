@@ -4,6 +4,7 @@ import exceptions.BuildingInCoolDownException;
 import exceptions.MaxLevelException;
 
 public class Farm extends EconomicBuilding {
+    private static final long serialVersionUID = 1L;
 
     public Farm() {
         super(1000, 500);

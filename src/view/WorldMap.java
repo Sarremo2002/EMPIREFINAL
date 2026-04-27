@@ -5,6 +5,7 @@ import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.util.ArrayList;
 
 import javax.swing.JButton;
@@ -23,6 +24,7 @@ public class WorldMap extends MainView implements ActionListener {
     private JButton btnRome;
     private JButton btnSparta;
     private JButton btnforplayerArmies;
+    private JButton saveBtn;
     private JTable table;
     private JFrame worldMapView;
 
@@ -70,9 +72,12 @@ public class WorldMap extends MainView implements ActionListener {
                     btnSparta = cityButton("Sparta");
                     grid.add(btnSparta);
                 } else if (row == 0 && column == 0) {
-                    btnforplayerArmies = UITheme.primaryButton("<html><center>Field<br>Armies</center></html>");
+                    btnforplayerArmies = UITheme.primaryButton("<html><center>Field Armies<br>"
+                            + getGame().getPlayer().getControlledArmies().size() + "</center></html>");
                     btnforplayerArmies.addActionListener(this);
                     grid.add(btnforplayerArmies);
+                } else if (roadText(row, column) != null) {
+                    grid.add(UITheme.roadTile(roadText(row, column)));
                 } else {
                     grid.add(UITheme.mapTile());
                 }
@@ -86,9 +91,46 @@ public class WorldMap extends MainView implements ActionListener {
     }
 
     private JButton cityButton(String cityName) {
-        JButton button = UITheme.cityButton(cityName, isControlled(cityName));
+        boolean controlled = isControlled(cityName);
+        CityStatus status = cityStatus(cityName, controlled);
+        JButton button = UITheme.cityButton(cityName, status.text, controlled, status.underSiege);
         button.addActionListener(this);
         return button;
+    }
+
+    private String roadText(int row, int column) {
+        if (row == 5 && column == 4) {
+            return "Cairo-Rome 6";
+        }
+        if (row == 4 && column == 8) {
+            return "Cairo-Sparta 5";
+        }
+        if (row == 2 && column == 5) {
+            return "Rome-Sparta 9";
+        }
+        return null;
+    }
+
+    private CityStatus cityStatus(String cityName, boolean controlled) {
+        CityStatus status = new CityStatus();
+        status.text = controlled ? "Controlled" : "Uncaptured";
+        for (int i = 0; i < getGame().getAvailableCities().size(); i++) {
+            if (getGame().getAvailableCities().get(i).getName().equalsIgnoreCase(cityName)
+                    && getGame().getAvailableCities().get(i).isUnderSiege()) {
+                status.text = "Siege " + getGame().getAvailableCities().get(i).getTurnsUnderSiege();
+                status.underSiege = true;
+            }
+        }
+        int armiesHere = 0;
+        for (int i = 0; i < getGame().getPlayer().getControlledArmies().size(); i++) {
+            if (getGame().getPlayer().getControlledArmies().get(i).getCurrentLocation().equalsIgnoreCase(cityName)) {
+                armiesHere++;
+            }
+        }
+        if (armiesHere > 0) {
+            status.text += "<br>Armies " + armiesHere;
+        }
+        return status;
     }
 
     private boolean isControlled(String cityName) {
@@ -108,6 +150,9 @@ public class WorldMap extends MainView implements ActionListener {
         JLabel summary = UITheme.label("Field armies: " + getGame().getPlayer().getControlledArmies().size());
         sidebar.add(summary, BorderLayout.NORTH);
         sidebar.add(armyInformation(getGame().getPlayer().getControlledArmies()), BorderLayout.CENTER);
+        saveBtn = UITheme.primaryButton("Save Game");
+        saveBtn.addActionListener(this);
+        sidebar.add(saveBtn, BorderLayout.SOUTH);
         return sidebar;
     }
 
@@ -171,6 +216,8 @@ public class WorldMap extends MainView implements ActionListener {
             openCityOrTarget("Sparta");
         } else if (e.getSource() == btnforplayerArmies) {
             new DisplayArmies(getGame().getPlayer().getControlledArmies());
+        } else if (e.getSource() == saveBtn) {
+            saveGame();
         }
     }
 
@@ -183,5 +230,19 @@ public class WorldMap extends MainView implements ActionListener {
             }
         }
         new TargetingCity(getGame(), cityName);
+    }
+
+    private void saveGame() {
+        try {
+            getGame().save(Game.DEFAULT_SAVE_PATH);
+            UITheme.showInfo(this, "Campaign saved to " + Game.DEFAULT_SAVE_PATH + ".");
+        } catch (IOException exception) {
+            UITheme.showError(this, "Could not save campaign: " + exception.getMessage());
+        }
+    }
+
+    private static class CityStatus {
+        private String text;
+        private boolean underSiege;
     }
 }

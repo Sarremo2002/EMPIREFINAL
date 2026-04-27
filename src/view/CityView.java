@@ -6,6 +6,7 @@ import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.util.ArrayList;
 
 import javax.swing.BoxLayout;
@@ -38,6 +39,7 @@ public class CityView extends MainView implements ActionListener {
     private JButton backToWorld;
     private JButton defendingBtn;
     private JButton armyBtn;
+    private JButton saveBtn;
     private JButton farmBtn;
     private JButton marketBtn;
     private JButton stableBtn;
@@ -167,18 +169,21 @@ public class CityView extends MainView implements ActionListener {
         armyBtn = UITheme.button("Field Armies");
         defendingBtn = UITheme.button("Defenders");
         setArmy = UITheme.button("Dispatch Unit");
+        saveBtn = UITheme.button("Save Game");
         endTurn = UITheme.dangerButton("End Turn");
 
         backToWorld.addActionListener(this);
         armyBtn.addActionListener(this);
         defendingBtn.addActionListener(this);
         setArmy.addActionListener(this);
+        saveBtn.addActionListener(this);
         endTurn.addActionListener(this);
 
         actions.add(backToWorld);
         actions.add(armyBtn);
         actions.add(defendingBtn);
         actions.add(setArmy);
+        actions.add(saveBtn);
         actions.add(endTurn);
         return actions;
     }
@@ -214,16 +219,26 @@ public class CityView extends MainView implements ActionListener {
             new ArmyView(getGame().getPlayer().getControlledArmies());
         } else if (source == defendingBtn || source == setArmy) {
             new DefendingArmies(getGame(), city, city.getDefendingArmy());
+        } else if (source == saveBtn) {
+            saveGame();
         }
     }
 
     private void build(String type) {
         try {
             getGame().getPlayer().build(type, city.getName());
+            UITheme.showInfo(this, "Built " + displayBuildType(type) + " in " + city.getName() + ".");
             reopenCity();
         } catch (NotEnoughGoldException exception) {
             UITheme.showError(this, "Not enough gold to perform this action.");
         }
+    }
+
+    private String displayBuildType(String type) {
+        if (type.equals("archeryrange")) {
+            return "Archery Range";
+        }
+        return type.substring(0, 1).toUpperCase() + type.substring(1);
     }
 
     private void openEconomicBuilding(Class<?> type) {
@@ -255,7 +270,8 @@ public class CityView extends MainView implements ActionListener {
         Game currentGame = getGame();
         City currentCity = city;
         dispose();
-        new CityView(currentGame, currentCity);
+        CityView nextView = new CityView(currentGame, currentCity);
+        UITheme.showTurnSummary(nextView, currentGame.getLastTurnSummary());
 
         for (int i = 0; i < currentGame.getPlayer().getControlledArmies().size(); i++) {
             Army army = currentGame.getPlayer().getControlledArmies().get(i);
@@ -272,6 +288,15 @@ public class CityView extends MainView implements ActionListener {
 
         if (currentGame.isGameOver()) {
             new GameOver(currentGame);
+        }
+    }
+
+    private void saveGame() {
+        try {
+            getGame().save(Game.DEFAULT_SAVE_PATH);
+            UITheme.showInfo(this, "Campaign saved to " + Game.DEFAULT_SAVE_PATH + ".");
+        } catch (IOException exception) {
+            UITheme.showError(this, "Could not save campaign: " + exception.getMessage());
         }
     }
 

@@ -8,6 +8,7 @@ import units.Infantry;
 import units.Unit;
 
 public class Barracks extends MilitaryBuilding {
+    private static final long serialVersionUID = 1L;
 
     public Barracks() {
         super(2000, 1000,500);

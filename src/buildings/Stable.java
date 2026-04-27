@@ -7,6 +7,7 @@ import units.Cavalry;
 import units.Unit;
 
 public class Stable extends MilitaryBuilding {
+    private static final long serialVersionUID = 1L;
 
     public Stable() {
         super(2500, 1500, 600);

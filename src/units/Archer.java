@@ -3,6 +3,7 @@ package units;
 import exceptions.FriendlyFireException;
 
 public class Archer extends Unit{
+    private static final long serialVersionUID = 1L;
 
 
 

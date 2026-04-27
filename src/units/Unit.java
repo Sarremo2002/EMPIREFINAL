@@ -1,8 +1,12 @@
 package units;
 
+import java.io.Serializable;
+
 import exceptions.FriendlyFireException;
 
-public abstract class Unit {
+public abstract class Unit implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private int level;
     private int maxSoldierCount;
     private int currentSoldierCount;
