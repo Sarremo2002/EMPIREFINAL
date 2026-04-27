@@ -1,97 +1,92 @@
 package view;
 
 import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 
-import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 
 import engine.Game;
-import  java.lang.NullPointerException;
-@SuppressWarnings({"serial", "this-escape"})
-public class Enter extends JFrame implements ActionListener{
-    JButton ok = new JButton("ok");
-    JFrame Enter = new JFrame();
-    String pname;
-    String pcity;
-    JTextField playerName;
-    JTextField playerCity;
 
-    public Enter(){
-        createEnterPage();
+@SuppressWarnings("serial")
+public class Enter extends JFrame implements ActionListener {
+    private final JTextField playerName = new JTextField(18);
+    private final JComboBox<String> playerCity = new JComboBox<String>(new String[] { "Cairo", "Rome", "Sparta" });
 
-
+    public Enter() {
+        UITheme.install();
+        setTitle("Empire");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setMinimumSize(new Dimension(520, 360));
+        setResizable(false);
+        setLocationRelativeTo(null);
+        setContentPane(createEnterPage());
+        pack();
+        setLocationRelativeTo(null);
+        setVisible(true);
     }
 
-    public JFrame createEnterPage(){
+    private JPanel createEnterPage() {
+        JPanel page = UITheme.pagePanel();
+        page.setLayout(new BorderLayout(0, 18));
 
-        Enter.setLayout(null);
-        Enter.setSize(400,300);
-        Enter.setLocationRelativeTo(null);
-        Enter.setTitle("Welcome");
+        JPanel header = new JPanel(new BorderLayout(0, 8));
+        header.setOpaque(false);
+        JLabel title = UITheme.title("Empire");
+        UITheme.centerLabel(title);
+        JLabel subtitle = UITheme.smallLight("Choose your capital and begin the campaign.");
+        UITheme.centerLabel(subtitle);
+        header.add(title, BorderLayout.CENTER);
+        header.add(subtitle, BorderLayout.SOUTH);
+        page.add(header, BorderLayout.NORTH);
 
-        JLabel playerNameWelc = new JLabel("Please Enter Your Name");
-        playerNameWelc.setBounds(125, 60, 80, 25);
-        playerNameWelc.setSize(180, 10);
-        Enter.add(playerNameWelc,BorderLayout.WEST);
+        JPanel form = UITheme.titledCard("New Campaign");
+        form.setLayout(new GridLayout(2, 2, 12, 12));
+        form.add(UITheme.label("Player name"));
+        form.add(playerName);
+        form.add(UITheme.label("Starting city"));
+        form.add(playerCity);
+        page.add(form, BorderLayout.CENTER);
 
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        actions.setOpaque(false);
+        javax.swing.JButton start = UITheme.primaryButton("Start Campaign");
+        start.addActionListener(this);
+        actions.add(start);
+        page.add(actions, BorderLayout.SOUTH);
 
-        playerName =new JTextField(20);
-        playerName.setBounds(150 , 80 , 80 , 25);
-        Enter.add(playerName, BorderLayout.CENTER);
-
-
-        JLabel playerCityWelc = new JLabel("Type a city from Cairo, Sparta, or Rome");
-        playerCityWelc.setBounds(80, 110, 80, 25);
-        playerCityWelc.setSize(250, 20);
-        Enter.add(playerCityWelc,BorderLayout.WEST);
-
-
-        playerCity =new JTextField(20);
-        playerCity.setBounds(150 , 140 , 80 , 25);
-        Enter.add(playerCity, BorderLayout.CENTER);
-        ok.setBounds(150, 190, 80, 25);
-        Enter.add(ok);
-
-        Enter.setResizable(false);
-        Enter.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        Enter.setVisible(true);
-        ok.addActionListener(this);
-
-        return Enter;
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                playerName.requestFocusInWindow();
+            }
+        });
+        return page;
     }
 
-    @Override
     public void actionPerformed(ActionEvent e) {
-        if(e.getSource()==ok){
-            Enter.dispose();
-            try {
-                pname = playerName.getText().trim();
-                pcity = playerCity.getText().trim().toLowerCase();
-                if(pname.equals("") || pcity.equals("")){
-                    new Enter();
-                    return;
-                }
-                if(pcity .equals("Cairo".toLowerCase()) || pcity .equals("Rome".toLowerCase()) || pcity .equals("Sparta".toLowerCase())){
-                    Game r = new Game(pname,pcity);
-                    new WorldMap(r);
-                }
-                else{
-                    new Enter();
-                }
-            }catch (IOException e1){
+        String name = playerName.getText().trim();
+        String city = ((String) playerCity.getSelectedItem()).toLowerCase();
 
-            }
-            catch(NullPointerException el){
-
-            }
-
+        if (name.equals("")) {
+            UITheme.showError(this, "Please enter your name before starting.");
+            return;
         }
 
+        try {
+            dispose();
+            new WorldMap(new Game(name, city));
+        } catch (IOException exception) {
+            UITheme.showError(this, "Could not load game data: " + exception.getMessage());
+            new Enter();
+        }
     }
-
 }

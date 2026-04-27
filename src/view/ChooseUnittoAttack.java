@@ -66,11 +66,12 @@ public class ChooseUnittoAttack extends JFrame implements ActionListener {
                     log.add("Turn: " + turns + " Before Battle: Defending Unit Has " + CSCD + " Soldiers");
                     log.add("");
                     attack.attack(target);
-                    CSCA = attack.getCurrentSoldierCount();
-                    if (target.getCurrentSoldierCount() != 0){
-                        //defend.getUnits().get(i).attack(attack);
-                        CSCD = target.getCurrentSoldierCount();
+                    if (target.getCurrentSoldierCount() != 0 && attack.getCurrentSoldierCount() != 0){
+                        log.add("Turn: " + turns + " Counterattack: Defending Unit Strikes Back");
+                        target.attack(attack);
                     }
+                    CSCA = attack.getCurrentSoldierCount();
+                    CSCD = target.getCurrentSoldierCount();
                     log.add("Turn: " + turns + " After Battle: Attacking Unit Has " + CSCA + " Soldiers");
                     log.add("Turn: " + turns + " After Battle: Defending Unit Has " + CSCD + " Soldiers");
                     log.add("");

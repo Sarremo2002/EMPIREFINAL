@@ -1,85 +1,98 @@
 package view;
 
-import java.awt.Button;
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 
-import units.Army;
 import engine.Game;
 import exceptions.FriendlyFireException;
+import units.Army;
 
-@SuppressWarnings({"serial", "this-escape"})
-public class AbsoluteAttack extends JFrame implements ActionListener{
-    JFrame x;
-    JFrame frame;
-    JFrame battleResults;
-    Button attack;
-    Button auto_Resolve;
-    Button lay_Siege;
-    Button res;
+@SuppressWarnings({ "serial", "this-escape" })
+public class AbsoluteAttack extends JFrame implements ActionListener {
+    private JFrame dialog;
+    private JButton attack;
+    private JButton autoResolve;
     private Game game;
     private Army army;
     private String cityName;
-    private int turns = 1;
-    public AbsoluteAttack(Game game , Army army , String cityName){
+
+    public AbsoluteAttack(Game game, Army army, String cityName) {
         this.army = army;
         this.cityName = cityName;
         this.game = game;
-        x = new JFrame();
-        x.setLocationRelativeTo(null);
-        x.setSize(500 , 200);
-        x.setLayout(null);
-        JLabel question = new JLabel("Do you want to attack manually or auto resoolve the battle?");
-        question.setBounds(40, 20, 400, 20);
-        x.add(question);
-        attack = new Button("Attack");
-        attack.setBounds(40, 80 , 100, 50);
-        attack.addActionListener(this);
-        x.add(attack);
 
-        auto_Resolve = new Button("Auto Resolve");
-        auto_Resolve.setBounds(330, 80 , 100, 50);
-        auto_Resolve.addActionListener(this);
-        x.add(auto_Resolve);
-        x.setVisible(true);
+        dialog = new JFrame("Forced Attack");
+        dialog.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        dialog.setContentPane(createContent());
+        dialog.pack();
+        dialog.setLocationRelativeTo(null);
+        dialog.setVisible(true);
     }
-    @Override
-    public void actionPerformed(ActionEvent e) {
-        x.dispose();
-        if(e.getSource() == attack){
-            ArrayList<String> log= new ArrayList<String>();
-            new BattleView(game, army , 1 , cityName , log);
-        }
-        if(e.getSource() == auto_Resolve){
-            for (int i = 0 ; i < game.getAvailableCities().size(); i++){
-                if (game.getAvailableCities().get(i).getName().equals(cityName))
-                    try{
-                        game.autoResolve(army, game.getAvailableCities().get(i).getDefendingArmy());
-                    }
-                    catch(FriendlyFireException f){
-                        JOptionPane.showMessageDialog(frame, "You cannot attack a friendly unit" , "", JOptionPane.ERROR_MESSAGE);
-                    }
-                    finally{
-                        if (army.getUnits().size() != 0){
-                            new BattleWon();
-                        }
-                        else{
-                            new BattleLost();
-                            if(game.getPlayer().getControlledArmies().contains(army)){
-                                game.getPlayer().getControlledArmies().remove(army);
-                            }
-                        }
 
-                    }
+    private JPanel createContent() {
+        JPanel page = UITheme.pagePanel();
+        page.setLayout(new BorderLayout(0, 14));
+
+        JLabel title = UITheme.title(cityName + " must be attacked");
+        UITheme.centerLabel(title);
+        page.add(title, BorderLayout.NORTH);
+
+        JLabel detail = UITheme.smallLight("The siege has reached its limit. Resolve the battle now.");
+        UITheme.centerLabel(detail);
+        page.add(detail, BorderLayout.CENTER);
+
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
+        actions.setOpaque(false);
+        attack = UITheme.primaryButton("Manual Battle");
+        autoResolve = UITheme.dangerButton("Auto Resolve");
+        attack.addActionListener(this);
+        autoResolve.addActionListener(this);
+        actions.add(attack);
+        actions.add(autoResolve);
+        page.add(actions, BorderLayout.SOUTH);
+        return page;
+    }
+
+    public void actionPerformed(ActionEvent e) {
+        dialog.dispose();
+        if (e.getSource() == attack) {
+            new BattleView(game, army, 1, cityName, new ArrayList<String>());
+        } else if (e.getSource() == autoResolve) {
+            autoResolveBattle();
+        }
+    }
+
+    private void autoResolveBattle() {
+        for (int i = 0; i < game.getAvailableCities().size(); i++) {
+            if (game.getAvailableCities().get(i).getName().equals(cityName)) {
+                try {
+                    game.autoResolve(army, game.getAvailableCities().get(i).getDefendingArmy());
+                } catch (FriendlyFireException exception) {
+                    UITheme.showError(this, "You cannot attack a friendly unit.");
+                } finally {
+                    showBattleResult();
+                }
+                return;
             }
         }
-        if (e.getSource() == res){
-            battleResults.dispose();
+    }
+
+    private void showBattleResult() {
+        if (army.getUnits().size() != 0) {
+            new BattleWon();
+        } else {
+            new BattleLost();
+            if (game.getPlayer().getControlledArmies().contains(army)) {
+                game.getPlayer().getControlledArmies().remove(army);
+            }
         }
     }
 }

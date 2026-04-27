@@ -1,7 +1,9 @@
 package view;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.GridLayout;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Toolkit;
 
 import javax.swing.JFrame;
@@ -20,37 +22,39 @@ public abstract class MainView extends JFrame {
         this.game = game;
     }
     public MainView(Game t){
+        UITheme.install();
         this.setTitle("Empire");
         this.setSize(Toolkit.getDefaultToolkit().getScreenSize());
+        this.setMinimumSize(new Dimension(1024, 680));
         this.setResizable(true);
-        this.setVisible(true);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setLocationRelativeTo(null);
+        this.getContentPane().setBackground(UITheme.BACKGROUND);
         game =t;
+        this.setVisible(true);
 
     }
     public JPanel createStats(){
-        JPanel t = new JPanel();
-        t.setBackground(Color.PINK);
-        t.setLayout(new GridLayout(2,4));
-        t.setSize((int)(this.getWidth() * 0.25),(int)(this.getHeight()*0.5));
-        JLabel PlyrNm=new JLabel("Player Name: ");
-        t.add(PlyrNm);
-        JLabel PlayerName=new JLabel(game.getPlayer().getName());
-        t.add(PlayerName);
-        JLabel Trn=new JLabel("Turn Count :");
-        t.add(Trn);
-        String TurN = String.valueOf(game.getCurrentTurnCount());
-        JLabel TurnCount=new JLabel(TurN);
-        t.add(TurnCount);
-        JLabel Gold=new JLabel("Gold :");
-        t.add(Gold);
-        JLabel CurrentGold =new JLabel(String.valueOf(game.getPlayer().getTreasury()));
-        t.add(CurrentGold);
-        JLabel Food =new JLabel("Food :");
-        t.add(Food);
-        JLabel CurrentFood =new JLabel(String.valueOf(game.getPlayer().getFood()));
-        t.add(CurrentFood);
-        return t;
+        JPanel panel = UITheme.card();
+        panel.setBackground(UITheme.PANEL_DARK);
+        panel.setLayout(new FlowLayout(FlowLayout.LEFT, 18, 8));
+        panel.setSize((int)(this.getWidth() * 0.25),(int)(this.getHeight()*0.5));
+        panel.add(stat("Player", game.getPlayer().getName()));
+        panel.add(stat("Turn", String.valueOf(game.getCurrentTurnCount()) + "/" + game.getMaxTurnCount()));
+        panel.add(stat("Gold", UITheme.number(game.getPlayer().getTreasury())));
+        panel.add(stat("Food", UITheme.number(game.getPlayer().getFood())));
+        return panel;
+    }
+
+    private JPanel stat(String title, String value) {
+        JPanel panel = new JPanel(new BorderLayout(4, 0));
+        panel.setOpaque(false);
+        JLabel titleLabel = UITheme.smallLight(title + ": ");
+        JLabel valueLabel = new JLabel(value);
+        valueLabel.setForeground(Color.WHITE);
+        valueLabel.setFont(valueLabel.getFont().deriveFont(java.awt.Font.BOLD));
+        panel.add(titleLabel, BorderLayout.WEST);
+        panel.add(valueLabel, BorderLayout.CENTER);
+        return panel;
     }
 }

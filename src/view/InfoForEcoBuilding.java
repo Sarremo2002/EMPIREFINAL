@@ -1,101 +1,139 @@
 package view;
 
-import java.awt.Button;
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
 import java.awt.GridLayout;
-import java.awt.Label;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
+import javax.swing.JButton;
 import javax.swing.JFrame;
-import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 
+import buildings.EconomicBuilding;
+import buildings.Farm;
+import buildings.Market;
 import engine.City;
 import engine.Game;
 import exceptions.BuildingInCoolDownException;
 import exceptions.MaxLevelException;
 import exceptions.NotEnoughGoldException;
-import buildings.EconomicBuilding;
-import buildings.Farm;
-import buildings.Market;
 
-@SuppressWarnings({"serial", "this-escape"})
+@SuppressWarnings({ "serial", "this-escape" })
 public class InfoForEcoBuilding extends JFrame implements ActionListener {
-    Button UpgradeBtn;
-    JFrame frame;
+    private JButton upgradeBtn;
+    private JButton backBtn;
+    private EconomicBuilding ecoBuilding;
+    private Game game;
+    private City city;
+    private boolean returnedToCity;
 
-    EconomicBuilding EcoBuilding;
-    Game game;
-    City city;
-    public Game getGame() {
-        return game;
-    }
-    public void setGame(Game game) {
+    public InfoForEcoBuilding(EconomicBuilding building, Game game, City city) {
         this.game = game;
-    }
-    public City getCity() {
-        return city;
-    }
-    public void setCity(City city) {
         this.city = city;
+        this.ecoBuilding = building;
+
+        setTitle(buildingName() + " Details");
+        setResizable(false);
+        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        setContentPane(createContent());
+        addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent e) {
+                returnToCity();
+            }
+        });
+        pack();
+        setLocationRelativeTo(null);
+        setVisible(true);
     }
-    public EconomicBuilding getEcoBuilding() {
-        return EcoBuilding;
+
+    private JPanel createContent() {
+        JPanel page = UITheme.pagePanel();
+        page.setLayout(new BorderLayout(0, 14));
+        page.add(UITheme.title(buildingName()), BorderLayout.NORTH);
+
+        JPanel details = UITheme.titledCard("Building Stats");
+        details.setLayout(new GridLayout(5, 2, 12, 8));
+        details.add(UITheme.label("Level"));
+        details.add(UITheme.label(String.valueOf(ecoBuilding.getLevel())));
+        details.add(UITheme.label("Upgrade cost"));
+        details.add(UITheme.label(UITheme.number(ecoBuilding.getUpgradeCost()) + " gold"));
+        details.add(UITheme.label("Harvest"));
+        details.add(UITheme.label(UITheme.number(ecoBuilding.harvest()) + harvestType()));
+        details.add(UITheme.label("Status"));
+        details.add(UITheme.label(ecoBuilding.isCoolDown() ? "Cooling down" : "Ready"));
+        details.add(UITheme.label("Treasury"));
+        details.add(UITheme.label(UITheme.number(game.getPlayer().getTreasury()) + " gold"));
+        page.add(details, BorderLayout.CENTER);
+
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        actions.setOpaque(false);
+        backBtn = UITheme.button("Back to City");
+        upgradeBtn = UITheme.primaryButton("Upgrade");
+        backBtn.addActionListener(this);
+        configureUpgradeButton();
+        actions.add(backBtn);
+        actions.add(upgradeBtn);
+        page.add(actions, BorderLayout.SOUTH);
+        return page;
     }
-    public void setEcoBuilding(EconomicBuilding EconomicalBuilding) {
-        EcoBuilding = EconomicalBuilding;
-    }
-    public InfoForEcoBuilding(EconomicBuilding s,Game t,City u){
-        game =t;
-        city = u;
-        EcoBuilding =s ;
-        this.setResizable(true);
-        this.setVisible(true);
-        this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        this.setLocationRelativeTo(null);
-        this.setSize(400,200);
-        this.setLayout(new GridLayout(2,2));
-        if(s instanceof Farm){
-            this.add(new Label("Type : Farm"));
+
+    private void configureUpgradeButton() {
+        if (ecoBuilding.getLevel() >= 3) {
+            UITheme.disable(upgradeBtn, "Max Level");
+        } else if (ecoBuilding.isCoolDown()) {
+            UITheme.disable(upgradeBtn, "Cooling Down");
+        } else if (game.getPlayer().getTreasury() < ecoBuilding.getUpgradeCost()) {
+            UITheme.disable(upgradeBtn, "Need " + ecoBuilding.getUpgradeCost() + " gold");
+        } else {
+            upgradeBtn.addActionListener(this);
         }
-        else if(s instanceof Market){
-            this.add(new Label("Type : Market"));
-        }
-
-        this.add(new Label ("Upgrade Cost:"+s.getUpgradeCost()));
-        this.add(new Label("Level :"+s.getLevel()));
-        UpgradeBtn = new Button();
-        UpgradeBtn.setLabel("Upgrade ");
-        UpgradeBtn.addActionListener(this);
-        this.add(UpgradeBtn);
     }
-    public void actionPerformed(ActionEvent e){
-        if(e.getSource()==UpgradeBtn){
-            try{
-                if (getEcoBuilding() instanceof Farm){
-                    this.getGame().getPlayer().upgradeBuilding(EcoBuilding);
-                    this.dispose();
-                }
-                if (getEcoBuilding() instanceof Market){
-                    this.getGame().getPlayer().upgradeBuilding(EcoBuilding);
-                    this.dispose();
-                }
-            }
-            catch(BuildingInCoolDownException y){
-                JOptionPane.showMessageDialog(frame, "Building is still in cooldown" , "", JOptionPane.ERROR_MESSAGE);
-            }
-            catch(MaxLevelException x){
-                JOptionPane.showMessageDialog(frame, "Maximum level has been reached" , "", JOptionPane.ERROR_MESSAGE);
-            }
-            catch(NotEnoughGoldException x){
-                JOptionPane.showMessageDialog(frame, "Not enough gold to perform this action" , "", JOptionPane.ERROR_MESSAGE);
-            }
 
-
-                this.dispose();
-                new CityView(this.getGame(),this.getCity());
-
+    public void actionPerformed(ActionEvent e) {
+        if (e.getSource() == backBtn) {
+            returnToCity();
+        } else if (e.getSource() == upgradeBtn) {
+            try {
+                game.getPlayer().upgradeBuilding(ecoBuilding);
+                returnToCity();
+            } catch (BuildingInCoolDownException exception) {
+                UITheme.showError(this, "Building is still in cooldown.");
+            } catch (MaxLevelException exception) {
+                UITheme.showError(this, "Maximum level has been reached.");
+            } catch (NotEnoughGoldException exception) {
+                UITheme.showError(this, "Not enough gold to perform this action.");
+            }
         }
     }
-    public static void main(String [] args){
+
+    private void returnToCity() {
+        if (!returnedToCity) {
+            returnedToCity = true;
+            dispose();
+            new CityView(game, city);
+        }
+    }
+
+    private String buildingName() {
+        if (ecoBuilding instanceof Farm) {
+            return "Farm";
+        }
+        if (ecoBuilding instanceof Market) {
+            return "Market";
+        }
+        return "Economic Building";
+    }
+
+    private String harvestType() {
+        if (ecoBuilding instanceof Farm) {
+            return " food";
+        }
+        if (ecoBuilding instanceof Market) {
+            return " gold";
+        }
+        return "";
     }
 }

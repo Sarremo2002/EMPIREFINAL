@@ -1,441 +1,331 @@
 package view;
 
 import java.awt.BorderLayout;
-import java.awt.Button;
-import java.awt.Color;
-import java.awt.Frame;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.GridLayout;
-import java.awt.Label;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.border.MatteBorder;
 
 import buildings.ArcheryRange;
 import buildings.Barracks;
+import buildings.EconomicBuilding;
 import buildings.Farm;
 import buildings.Market;
+import buildings.MilitaryBuilding;
 import buildings.Stable;
 import engine.City;
 import engine.Game;
 import exceptions.NotEnoughGoldException;
+import units.Army;
 
-@SuppressWarnings({"serial", "this-escape"})
+@SuppressWarnings({ "serial", "this-escape" })
 public class CityView extends MainView implements ActionListener {
-        private City city;
-        Button setArmy;
-        Button BuildStableBtn;
-        Button BuildBarracksBtn;
-        Button BuildArcheryRangeBtn ;
-        Button BuildMarketBtn;
-        Button BuildFarmBtn;
-        Button BacktoWorld;
-        Button DefendingBtn ;
-        Button ArmyBtn;
-        Button FarmBtn;
-        Button MarketBtn;
-        Button StableBtn;
-        Button BarracksBtn;
-        Button ArcheryRangeBtn;
-        Button EndTurn;
-        JFrame frame;
-        public City getCity() {
-            return city;
-        }
-        public void setCity(City city) {
-            this.city = city;
-        }
-        int MiltBuildingNeeded;
-        JPanel info;
-        Button miltupgradebtn;
-        Button backtoworld = new Button();
-        JFrame CV;
-        public CityView(Game t, City r){
-            super(t);
-            city = r;
-            this.setTitle("City View");
-            JPanel s = new JPanel();
-            s.setLayout(new GridLayout(2,0));
-            s.add(createStats());
-            s.add(createShop());
-            this.setLayout(new BorderLayout());
-            this.add(CairoMap(), BorderLayout.WEST);
-            this.add(s,BorderLayout.EAST);
+    private City city;
+    private JButton setArmy;
+    private JButton buildStableBtn;
+    private JButton buildBarracksBtn;
+    private JButton buildArcheryRangeBtn;
+    private JButton buildMarketBtn;
+    private JButton buildFarmBtn;
+    private JButton backToWorld;
+    private JButton defendingBtn;
+    private JButton armyBtn;
+    private JButton farmBtn;
+    private JButton marketBtn;
+    private JButton stableBtn;
+    private JButton barracksBtn;
+    private JButton archeryRangeBtn;
+    private JButton endTurn;
+    private JFrame cityView;
 
-            //this.add(createInfoArmy());
+    public CityView(Game game, City city) {
+        super(game);
+        this.city = city;
+        this.cityView = this;
+        setTitle(city.getName() + " City");
+        setContentPane(createCityView());
+        revalidate();
+        repaint();
+    }
 
-            CV = this;
+    public City getCity() {
+        return city;
+    }
 
-        }
-        public JFrame getCV(){
-            return CV;
-        }
-        public void setCV(JFrame cityView) {
-            CV = cityView;
-        }
+    public void setCity(City city) {
+        this.city = city;
+    }
 
+    public JFrame getCV() {
+        return cityView;
+    }
 
-        public JPanel createInfoArmy(){
-            JPanel x = new JPanel();
-            x.setBackground(Color.YELLOW);
-            x.setLayout(new GridLayout(10,3));
-             x.setBorder( new MatteBorder(2, 2, 2, 2, Color.BLACK) );
+    public void setCV(JFrame cityView) {
+        this.cityView = cityView;
+    }
 
-            x.setBounds(0,0,(int)(this.getWidth() * 0.75),this.getHeight());
-            for(int i =0;i<10;i++){
-                for(int j =0 ;j<4;j++){
-                    if(i==0 && j ==0){
-                        JLabel t = new JLabel("Armies");
-                        x.add(t);
-                    }
-                    else if(i == 1 && j ==0){
-                        JLabel t = new JLabel("Level");
-                        x.add(t);
-                    }else if(i == 1 && j ==1){
-                        JLabel t = new JLabel("Type");
-                        x.add(t);
-                    }
-                    else if(i == 1 && j ==2){
-                        JLabel t = new JLabel("Upgrade");
-                        x.add(t);
-                    }
-                    else if(i == 1 && j ==3){
-                        JLabel t = new JLabel("Upgrade Cost");
-                        x.add(t);
-                    }
-                    else {
-                        JLabel t = new JLabel("");
-                        x.add(t);
-                    }
+    private JPanel createCityView() {
+        JPanel page = UITheme.pagePanel();
+        page.setLayout(new BorderLayout(16, 16));
+        page.add(createStats(), BorderLayout.NORTH);
+        page.add(createCityMap(), BorderLayout.CENTER);
+        page.add(createShop(), BorderLayout.EAST);
+        page.add(createActionBar(), BorderLayout.SOUTH);
+        return page;
+    }
+
+    private JPanel createCityMap() {
+        JPanel panel = UITheme.titledCard(city.getName() + " District");
+        panel.setLayout(new BorderLayout(0, 10));
+
+        JPanel grid = new JPanel(new GridLayout(7, 7, 6, 6));
+        grid.setOpaque(false);
+
+        for (int row = 0; row < 7; row++) {
+            for (int column = 0; column < 7; column++) {
+                if (row == 1 && column == 1 && hasMilitaryBuilding(ArcheryRange.class)) {
+                    archeryRangeBtn = buildingButton("Archery Range", findMilitaryBuilding(ArcheryRange.class));
+                    grid.add(archeryRangeBtn);
+                } else if (row == 2 && column == 2 && hasMilitaryBuilding(Barracks.class)) {
+                    barracksBtn = buildingButton("Barracks", findMilitaryBuilding(Barracks.class));
+                    grid.add(barracksBtn);
+                } else if (row == 3 && column == 1 && hasMilitaryBuilding(Stable.class)) {
+                    stableBtn = buildingButton("Stable", findMilitaryBuilding(Stable.class));
+                    grid.add(stableBtn);
+                } else if (row == 2 && column == 4 && hasEconomicBuilding(Market.class)) {
+                    marketBtn = buildingButton("Market", findEconomicBuilding(Market.class));
+                    grid.add(marketBtn);
+                } else if (row == 3 && column == 5 && hasEconomicBuilding(Farm.class)) {
+                    farmBtn = buildingButton("Farm", findEconomicBuilding(Farm.class));
+                    grid.add(farmBtn);
+                } else {
+                    grid.add(UITheme.mapTile());
                 }
             }
-
-        return x;
-        }
-        public JPanel CairoMap(){
-            JPanel x = new JPanel();
-            x.setLayout(new GridLayout(7,7));
-
-            boolean ArcheryRangeFlag=false;
-            boolean BarracksFlag=false;
-            boolean StableFlag=false;
-            boolean MarketFlag=false;
-            boolean FarmFlag=false;
-            if(this.getCity().getMilitaryBuildings().size()>0){
-            for(int t =0 ;t<this.getCity().getMilitaryBuildings().size();t++){
-                if(this.getCity().getMilitaryBuildings().get(t) instanceof ArcheryRange){
-                    ArcheryRangeFlag= true;
-                }else if(this.getCity().getMilitaryBuildings().get(t) instanceof Barracks){
-                    BarracksFlag= true;
-                }else if(this.getCity().getMilitaryBuildings().get(t) instanceof Stable){
-                    StableFlag= true;
-                }
-            }}
-            for(int t =0 ;t<this.getCity().getEconomicalBuildings().size();t++){
-                if(this.getCity().getEconomicalBuildings().get(t) instanceof Market){
-                    MarketFlag= true;
-                }else if(this.getCity().getEconomicalBuildings().get(t) instanceof Farm){
-                    FarmFlag= true;
-                }
-            }
-            for(int i = 0 ;i<7;i++){
-                for(int j =0 ;j<7;j++){
-                    if(i ==1 && j==1 && ArcheryRangeFlag){
-                        ArcheryRangeBtn = new Button();
-                        ArcheryRangeBtn.addActionListener(this);
-                        ArcheryRangeBtn.setLabel("ArcheryRange");
-                        x.add(ArcheryRangeBtn);
-                    }else if(i ==2 && j==2 && BarracksFlag ){
-                        BarracksBtn = new Button();
-                        BarracksBtn.setLabel("Barracks");
-                        BarracksBtn.addActionListener(this);
-                        x.add(BarracksBtn);
-                    }else if(i ==3 && j==1 && StableFlag){
-                        StableBtn = new Button();
-                        StableBtn.setLabel("Stable");
-                        StableBtn.addActionListener(this);
-                        x.add(StableBtn);
-                    }else if(i ==2 && j==4 && MarketFlag){
-                        MarketBtn = new Button();
-                        MarketBtn.setLabel("Market");
-                        MarketBtn.addActionListener(this);
-                        x.add(MarketBtn);
-                    }else if(i ==3 && j==5 && FarmFlag){
-                        FarmBtn = new Button();
-                        FarmBtn.setLabel("Farm");
-                        FarmBtn.addActionListener(this);
-                        x.add(FarmBtn);
-                    }else if(i ==0 && j==5 ){
-                        ArmyBtn = new Button();
-                        ArmyBtn.setLabel("Armies");
-                        ArmyBtn.addActionListener(this);
-                        x.add(ArmyBtn);
-                    }else if(i ==0 && j==6 ){
-                        DefendingBtn = new Button();
-                        DefendingBtn.setLabel("Defending Army");
-                        DefendingBtn.addActionListener(this);
-                        x.add(DefendingBtn);
-                    }else if (i ==0 && j==4 ){
-                        setArmy = new Button();
-                        setArmy.setLabel("Add Army");
-                        setArmy.addActionListener(this);
-                        x.add(setArmy);
-                    }else if(i ==6 && j==6 ){
-                        BacktoWorld = new Button();
-                        BacktoWorld.setLabel("Back to World");
-                        BacktoWorld.addActionListener(this);
-                        x.add(BacktoWorld);
-                    }else if(i ==6 && j==5 ){
-                        EndTurn = new Button();
-                        EndTurn.setLabel("End Turn");
-                        EndTurn.addActionListener(this);
-                        x.add(EndTurn);
-                    }else{
-                        Label r = new Label("");
-                        x.add(r);
-                    }
-                }
-            }
-            return x;
-        }
-        public JPanel createShop(){
-            JPanel x = new JPanel();
-            x.setLayout(new GridLayout(2,3));
-            boolean ArcheryRangeFlag=false;
-            boolean BarracksFlag=false;
-            boolean StableFlag=false;
-            boolean MarketFlag=false;
-            boolean FarmFlag=false;
-
-            for(int t =0 ;t<this.getCity().getMilitaryBuildings().size();t++){
-                if(this.getCity().getMilitaryBuildings().get(t) instanceof ArcheryRange){
-                    ArcheryRangeFlag= true;
-                }else if(this.getCity().getMilitaryBuildings().get(t) instanceof Barracks){
-                    BarracksFlag= true;
-                }else if(this.getCity().getMilitaryBuildings().get(t) instanceof Stable){
-                    StableFlag= true;
-                }
-            }for(int t =0 ;t<this.getCity().getEconomicalBuildings().size();t++){
-                if(this.getCity().getEconomicalBuildings().get(t) instanceof Market){
-                    MarketFlag= true;
-                }else if(this.getCity().getEconomicalBuildings().get(t) instanceof Farm){
-                    FarmFlag= true;
-                }
-            }
-
-
-                        Label t = new Label("Shop");
-                        x.add(t);
-                    if (FarmFlag==false){
-                        BuildFarmBtn = new Button();
-                        BuildFarmBtn.addActionListener(this);
-                        BuildFarmBtn.setLabel("Buy Farm");
-                        x.add(BuildFarmBtn);
-                    }if(MarketFlag==false){
-                        BuildMarketBtn = new Button();
-                        BuildMarketBtn.addActionListener(this);
-                        BuildMarketBtn.setLabel("Buy Market");
-                        x.add(BuildMarketBtn);
-                    } if(ArcheryRangeFlag==false){
-                        BuildArcheryRangeBtn = new Button();
-                        BuildArcheryRangeBtn.addActionListener(this);
-                        BuildArcheryRangeBtn.setLabel("Buy Archery Range");
-                        x.add(BuildArcheryRangeBtn);
-                    }if( BarracksFlag==false){
-                        BuildBarracksBtn = new Button();
-                        BuildBarracksBtn.addActionListener(this);
-                        BuildBarracksBtn.setLabel("Buy Barracks");
-                        x.add(BuildBarracksBtn);
-                    }if( StableFlag==false){
-                        BuildStableBtn = new Button();
-                        BuildStableBtn.addActionListener(this);
-                        BuildStableBtn.setLabel("Buy Stable");
-                        x.add(BuildStableBtn);
-
-                }
-
-            return x;
         }
 
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            if(e.getSource()==BacktoWorld){
-                Game v = this.getGame();
-                new WorldMap(v);
-                this.dispose();
+        JLabel hint = UITheme.label("Select a building tile to upgrade or recruit from it.");
+        panel.add(grid, BorderLayout.CENTER);
+        panel.add(hint, BorderLayout.SOUTH);
+        return panel;
+    }
 
+    private JButton buildingButton(String name, buildings.Building building) {
+        JButton button = UITheme.successButton("<html><center>" + name + "<br>Level " + building.getLevel()
+                + (building.isCoolDown() ? "<br>Cooling down" : "") + "</center></html>");
+        button.addActionListener(this);
+        button.setPreferredSize(new Dimension(118, 76));
+        return button;
+    }
+
+    public JPanel createShop() {
+        JPanel shop = UITheme.titledCard("Build");
+        shop.setLayout(new BoxLayout(shop, BoxLayout.Y_AXIS));
+        shop.setPreferredSize(new Dimension(320, 0));
+
+        buildFarmBtn = addBuildButton(shop, "Farm", "Food +500 each turn", 1000, hasEconomicBuilding(Farm.class));
+        buildMarketBtn = addBuildButton(shop, "Market", "Gold +1000 each turn", 1500, hasEconomicBuilding(Market.class));
+        buildArcheryRangeBtn = addBuildButton(shop, "Archery Range", "Recruit archers", 1500,
+                hasMilitaryBuilding(ArcheryRange.class));
+        buildBarracksBtn = addBuildButton(shop, "Barracks", "Recruit infantry", 2000, hasMilitaryBuilding(Barracks.class));
+        buildStableBtn = addBuildButton(shop, "Stable", "Recruit cavalry", 2500, hasMilitaryBuilding(Stable.class));
+
+        return shop;
+    }
+
+    private JButton addBuildButton(JPanel panel, String name, String detail, int cost, boolean alreadyBuilt) {
+        JButton button = UITheme.primaryButton("<html><b>Build " + name + "</b><br>" + cost + " gold<br>" + detail
+                + "</html>");
+        button.setAlignmentX(LEFT_ALIGNMENT);
+        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 72));
+        button.setToolTipText(detail);
+        if (alreadyBuilt) {
+            UITheme.disable(button, name + " built");
+        } else if (getGame().getPlayer().getTreasury() < cost) {
+            UITheme.disable(button, "Need " + cost + " gold for " + name);
+        } else {
+            button.addActionListener(this);
+        }
+        panel.add(button);
+        panel.add(javax.swing.Box.createVerticalStrut(8));
+        return button;
+    }
+
+    private JPanel createActionBar() {
+        JPanel actions = UITheme.card();
+        actions.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 0));
+
+        backToWorld = UITheme.button("Back to World");
+        armyBtn = UITheme.button("Field Armies");
+        defendingBtn = UITheme.button("Defenders");
+        setArmy = UITheme.button("Dispatch Unit");
+        endTurn = UITheme.dangerButton("End Turn");
+
+        backToWorld.addActionListener(this);
+        armyBtn.addActionListener(this);
+        defendingBtn.addActionListener(this);
+        setArmy.addActionListener(this);
+        endTurn.addActionListener(this);
+
+        actions.add(backToWorld);
+        actions.add(armyBtn);
+        actions.add(defendingBtn);
+        actions.add(setArmy);
+        actions.add(endTurn);
+        return actions;
+    }
+
+    public void actionPerformed(ActionEvent e) {
+        Object source = e.getSource();
+        if (source == backToWorld) {
+            new WorldMap(getGame());
+            dispose();
+        } else if (source == buildStableBtn) {
+            build("stable");
+        } else if (source == buildBarracksBtn) {
+            build("barracks");
+        } else if (source == buildArcheryRangeBtn) {
+            build("archeryrange");
+        } else if (source == buildFarmBtn) {
+            build("farm");
+        } else if (source == buildMarketBtn) {
+            build("market");
+        } else if (source == farmBtn) {
+            openEconomicBuilding(Farm.class);
+        } else if (source == marketBtn) {
+            openEconomicBuilding(Market.class);
+        } else if (source == archeryRangeBtn) {
+            openMilitaryBuilding(ArcheryRange.class);
+        } else if (source == barracksBtn) {
+            openMilitaryBuilding(Barracks.class);
+        } else if (source == stableBtn) {
+            openMilitaryBuilding(Stable.class);
+        } else if (source == endTurn) {
+            handleEndTurn();
+        } else if (source == armyBtn) {
+            new ArmyView(getGame().getPlayer().getControlledArmies());
+        } else if (source == defendingBtn || source == setArmy) {
+            new DefendingArmies(getGame(), city, city.getDefendingArmy());
+        }
+    }
+
+    private void build(String type) {
+        try {
+            getGame().getPlayer().build(type, city.getName());
+            reopenCity();
+        } catch (NotEnoughGoldException exception) {
+            UITheme.showError(this, "Not enough gold to perform this action.");
+        }
+    }
+
+    private void openEconomicBuilding(Class<?> type) {
+        EconomicBuilding building = findEconomicBuilding(type);
+        if (building != null) {
+            dispose();
+            new InfoForEcoBuilding(building, getGame(), city);
+        }
+    }
+
+    private void openMilitaryBuilding(Class<?> type) {
+        MilitaryBuilding building = findMilitaryBuilding(type);
+        if (building != null) {
+            dispose();
+            new InfoForMiltBuilding(building, getGame(), city);
+        }
+    }
+
+    private void handleEndTurn() {
+        ArrayList<String> forcedAttackCities = new ArrayList<String>();
+        for (int i = 0; i < getGame().getAvailableCities().size(); i++) {
+            City availableCity = getGame().getAvailableCities().get(i);
+            if (availableCity.isUnderSiege() && availableCity.getTurnsUnderSiege() == 2) {
+                forcedAttackCities.add(availableCity.getName());
             }
-//            else if(e.getSource()==DefendingBtn){
-//                ArmyView r = new ArmyView(this.getCity().getDefendingArmy());
-//
-//
-//            }
-            else if(e.getSource()==BuildStableBtn){
-            try{
-                this.dispose();
-                getGame().getPlayer().build("stable", getCity().getName());
-                }catch(NotEnoughGoldException x){
-                    JOptionPane.showMessageDialog(frame, "Not enough gold to perform this action" , "", JOptionPane.ERROR_MESSAGE);
-                }finally{
-                    new CityView(this.getGame(),this.getCity());
-                }
+        }
 
+        getGame().endTurn();
+        Game currentGame = getGame();
+        City currentCity = city;
+        dispose();
+        new CityView(currentGame, currentCity);
+
+        for (int i = 0; i < currentGame.getPlayer().getControlledArmies().size(); i++) {
+            Army army = currentGame.getPlayer().getControlledArmies().get(i);
+            City armyCity = findAvailableCity(army.getCurrentLocation());
+            if (armyCity == null || isControlledCity(armyCity.getName())) {
+                continue;
             }
-        else if(e.getSource()==BuildBarracksBtn){
-            try{
-                this.dispose();
-                getGame().getPlayer().build("barracks", getCity().getName());
-                }catch(NotEnoughGoldException x){
-                    JOptionPane.showMessageDialog(frame, "Not enough gold to perform this action" , "", JOptionPane.ERROR_MESSAGE);
-                }finally{
-                    new CityView(this.getGame(),this.getCity());
-                }
-
+            if (forcedAttackCities.contains(armyCity.getName())) {
+                new AbsoluteAttack(currentGame, army, armyCity.getName());
+            } else if (!armyCity.isUnderSiege()) {
+                new Attack(currentGame, army, armyCity.getName());
             }
-        else if(e.getSource()==BuildArcheryRangeBtn){
-            try{
-                this.dispose();
-                getGame().getPlayer().build("archeryrange", getCity().getName());
+        }
 
-                }catch(NotEnoughGoldException x){
-                    JOptionPane.showMessageDialog(frame, "Not enough gold to perform this action" , "", JOptionPane.ERROR_MESSAGE);
-                }finally{
-                    new CityView(this.getGame(),this.getCity());
-                }
+        if (currentGame.isGameOver()) {
+            new GameOver(currentGame);
+        }
+    }
 
-            }else if(e.getSource()==BuildFarmBtn){
-                try{
-                    this.dispose();
-                    getGame().getPlayer().build("farm", getCity().getName());
-                    }catch(NotEnoughGoldException t){
-                        JOptionPane.showMessageDialog(frame, "Not enough gold to perform this action" , "", JOptionPane.ERROR_MESSAGE);
-                    }finally{
-                        new CityView(this.getGame(),this.getCity());
-                    }
+    private void reopenCity() {
+        Game game = getGame();
+        City currentCity = city;
+        dispose();
+        new CityView(game, currentCity);
+    }
 
-                }
-            else if(e.getSource()==BuildMarketBtn){
-                    try{
-                        this.dispose();
-                        getGame().getPlayer().build("market", getCity().getName());
-                        }catch(NotEnoughGoldException t){
-                            JOptionPane.showMessageDialog(frame, "Not enough gold to perform this action" , "", JOptionPane.ERROR_MESSAGE);
-                        }finally{
-                            new CityView(this.getGame(),this.getCity());
-                        }
+    private boolean hasEconomicBuilding(Class<?> type) {
+        return findEconomicBuilding(type) != null;
+    }
 
-                }
-            else if(e.getSource()== FarmBtn){
-                int index =-1;
-                for(int i =0 ;i<getCity().getEconomicalBuildings().size();i++){
-                    if(getCity().getEconomicalBuildings().get(i) instanceof Farm){
-                        index = i;
-                    }
-                }
-                if(index != -1){
+    private boolean hasMilitaryBuilding(Class<?> type) {
+        return findMilitaryBuilding(type) != null;
+    }
 
-                    this.dispose();
-                InfoForEcoBuilding r = new InfoForEcoBuilding(this.getCity().getEconomicalBuildings().get(index),this.getGame(),this.getCity());
-                r.setVisible(true);
-                }
-            }else if(e.getSource()== MarketBtn){
-                int index =-1;
-                for(int i =0 ;i<getCity().getEconomicalBuildings().size();i++){
-                    if(getCity().getEconomicalBuildings().get(i) instanceof Market){
-                        index = i;
-                    }
-                }
-                if(index != -1){
-                this.dispose();
-                InfoForEcoBuilding r = new InfoForEcoBuilding(this.getCity().getEconomicalBuildings().get(index),this.getGame(),this.getCity());
-                r.setVisible(true);
-                }
-            }else if(e.getSource()== ArcheryRangeBtn){
-                int index =-1;
-                for(int i =0 ;i<getCity().getMilitaryBuildings().size();i++){
-                    if(getCity().getMilitaryBuildings().get(i) instanceof ArcheryRange){
-                        index = i;
-                    }
-                }
-                if(index != -1){
-                this.dispose();
-                InfoForMiltBuilding r = new InfoForMiltBuilding(this.getCity().getMilitaryBuildings().get(index),this.getGame(),this.getCity());
-                r.setVisible(true);
-                }
-            }else if(e.getSource()== BarracksBtn){
-                int index =-1;
-                for(int i =0 ;i<getCity().getMilitaryBuildings().size();i++){
-                    if(getCity().getMilitaryBuildings().get(i) instanceof Barracks){
-                        index = i;
-                    }
-                }
-                if(index != -1){
-                this.dispose();
-                InfoForMiltBuilding r = new InfoForMiltBuilding(this.getCity().getMilitaryBuildings().get(index),this.getGame(),this.getCity());
-                r.setVisible(true);
-                }
-            }else if(e.getSource()== StableBtn){
-                int index =-1;
-                for(int i =0 ;i<getCity().getMilitaryBuildings().size();i++){
-                    if(getCity().getMilitaryBuildings().get(i) instanceof Stable){
-                        index = i;
-                    }
-                }
-                if(index != -1){
-                this.dispose();
-                InfoForMiltBuilding r = new InfoForMiltBuilding(this.getCity().getMilitaryBuildings().get(index),this.getGame(),this.getCity());
-                r.setVisible(true);
-                }
+    private EconomicBuilding findEconomicBuilding(Class<?> type) {
+        for (int i = 0; i < city.getEconomicalBuildings().size(); i++) {
+            EconomicBuilding building = city.getEconomicalBuildings().get(i);
+            if (type.isInstance(building)) {
+                return building;
             }
-            else if(e.getSource()== EndTurn){
-                String cityName = "";
-                boolean yes = false;
-                for (int k = 0 ; k < getGame().getAvailableCities().size() ; k++){
-                    if(getGame().getAvailableCities().get(k).isUnderSiege()){
-                        if(getGame().getAvailableCities().get(k).getTurnsUnderSiege() == 2){
-                            yes = true;
-                            cityName = getGame().getAvailableCities().get(k).getName();
-                        }
-                    }
-                }
-                this.getGame().endTurn();
-                this.CV.dispose();
-                new CityView(this.getGame(),this.getCity());
-                for (int i = 0 ; i < getGame().getPlayer().getControlledArmies().size() ; i++){
-                    for (int j = 0 ; j < getGame().getAvailableCities().size() ; j++){
-                        if (!getGame().getPlayer().getControlledArmies().get(i).getCurrentLocation().equalsIgnoreCase(getCity().getName())){
-                            if (getGame().getPlayer().getControlledArmies().get(i).getCurrentLocation() .equals(getGame().getAvailableCities().get(j).getName())){
-                                cityName = getGame().getAvailableCities().get(j).getName();
-                                if (!getGame().getAvailableCities().get(j).isUnderSiege()){
-                                    new Attack(getGame() , getGame().getPlayer().getControlledArmies().get(i) , cityName);
-                                }
-                            }
-                        }
-                        if (yes){
-                            new AbsoluteAttack(getGame() , getGame().getPlayer().getControlledArmies().get(i) , cityName);
-                            yes = false;
-                        }
-                    }
-                }
-                if(getGame().isGameOver()){
-                    new GameOver(getGame());
-                }
-            }
+        }
+        return null;
+    }
 
-            else if(e.getSource() == ArmyBtn){
-
-                new ArmyView(this.getGame().getPlayer().getControlledArmies());
+    private MilitaryBuilding findMilitaryBuilding(Class<?> type) {
+        for (int i = 0; i < city.getMilitaryBuildings().size(); i++) {
+            MilitaryBuilding building = city.getMilitaryBuildings().get(i);
+            if (type.isInstance(building)) {
+                return building;
             }
-            else if(e.getSource() == DefendingBtn){
-                new DefendingArmies(this.getGame() , this.getCity() , this.getCity().getDefendingArmy());
-            }
-            else if(e.getSource() == setArmy){
-                new DefendingArmies(this.getGame() , this.getCity() , this.getCity().getDefendingArmy());
-            }
+        }
+        return null;
+    }
 
-        }}
+    private City findAvailableCity(String name) {
+        for (int i = 0; i < getGame().getAvailableCities().size(); i++) {
+            City availableCity = getGame().getAvailableCities().get(i);
+            if (availableCity.getName().equalsIgnoreCase(name)) {
+                return availableCity;
+            }
+        }
+        return null;
+    }
 
+    private boolean isControlledCity(String name) {
+        for (int i = 0; i < getGame().getPlayer().getControlledCities().size(); i++) {
+            if (getGame().getPlayer().getControlledCities().get(i).getName().equalsIgnoreCase(name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
